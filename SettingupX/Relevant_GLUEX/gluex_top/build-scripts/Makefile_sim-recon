@@ -1,0 +1,79 @@
+# Makefile_sim-recon
+
+# Builds sim-recon under a new directory (SIM_RECON_DIR) rooted in the current
+# working directory. The new directory has a name that depends on the
+# version being built.
+
+# SIM_RECON_VERSION defines which tagged version to build. It should
+# correspond to the name of the desired directory in the repos/tags
+# directory of the repository. If left undefined, the latest version
+# will be checked out from the repos/trunk.
+
+PWD = $(shell pwd)
+ifdef SIM_RECON_VERSION
+ SOURCE_CODE_TARGET = $(HALLD_HOME)/.untar_done
+ ifdef SIM_RECON_DIRTAG
+  SIM_RECON_DIR = sim-recon-$(SIM_RECON_VERSION)^$(SIM_RECON_DIRTAG)
+ else
+  SIM_RECON_DIR = sim-recon-$(SIM_RECON_VERSION)
+ endif
+ TARFILE = $(SIM_RECON_VERSION).tar.gz
+else
+ SOURCE_CODE_TARGET = $(HALLD_HOME)/.clone_done
+ ifndef SIM_RECON_URL
+  SIM_RECON_URL=https://github.com/jeffersonlab/sim-recon
+ endif
+ ifdef SIM_RECON_DIRTAG
+  SIM_RECON_DIR = $(notdir $(SIM_RECON_URL))^$(SIM_RECON_DIRTAG)
+ else
+  SIM_RECON_DIR = $(notdir $(SIM_RECON_URL))
+ endif
+ ifndef SIM_RECON_BRANCH
+  SIM_RECON_BRANCH = master
+ endif
+endif
+export HALLD_HOME = $(PWD)/$(SIM_RECON_DIR)
+
+all: prod_link
+
+$(TARFILE):
+	wget --no-check-certificate -O $@ https://github.com/JeffersonLab/sim-recon/archive/$(SIM_RECON_VERSION).tar.gz
+
+$(HALLD_HOME)/.untar_done: $(TARFILE)
+	rm -rf untar_temp_dir
+	mkdir untar_temp_dir
+	cd untar_temp_dir ; tar zxf ../$(TARFILE)
+	mv -v untar_temp_dir/* $(SIM_RECON_DIR)
+	rmdir -v untar_temp_dir
+	date > $@
+
+$(HALLD_HOME)/.clone_done:
+	git clone -b $(SIM_RECON_BRANCH) $(SIM_RECON_URL) $(SIM_RECON_DIR)
+ifdef SIM_RECON_HASH
+	cd $(SIM_RECON_DIR) ; git checkout $(SIM_RECON_HASH)
+endif
+	date > $@
+
+$(HALLD_HOME)/.getarg_patches_done: $(SOURCE_CODE_TARGET)
+ifdef APPLY_GETARG_PATCH
+	cp -pv $(BUILD_SCRIPTS)/patches/getarg_fix/* \
+		$(HALLD_HOME)/src/programs/Simulation/HDGeant
+endif
+	date > $@
+
+$(HALLD_HOME)/.sconstruct_done: $(HALLD_HOME)/.getarg_patches_done
+	cd $(HALLD_HOME)/src ; scons install $(SIM_RECON_SCONS_OPTIONS)
+	date > $@
+
+ifndef GVMS_TEST
+$(HALLD_HOME)/sim-recon_prereqs_version.xml: $(HALLD_HOME)/.sconstruct_done
+else
+$(HALLD_HOME)/sim-recon_prereqs_version.xml: $(SOURCE_CODE_TARGET)
+endif
+	cd $(HALLD_HOME) ; $(BUILD_SCRIPTS)/version_prereqs.pl sim-recon
+
+prod_link: $(HALLD_HOME)/sim-recon_prereqs_version.xml
+	test -L prod || ln -s $(SIM_RECON_DIR) prod # will not overwrite existing link
+
+env:
+	@echo SIM_RECON_DIR = $(SIM_RECON_DIR)

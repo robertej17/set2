@@ -1,0 +1,71 @@
+# Makefile_hdds
+
+# Builds HDDS under a new directory rooted in the current working
+# directory. The new directory (DIR_NAME) has a name that depends on
+# the version being built.
+
+# HDDS_VERSION defines which tagged version to build. It should
+# correspond to the name of the desired directory in the repos/tags
+# directory of the repository. If left undefined, the latest version
+# will be checked out from the repos/trunk.
+
+PWD = $(shell pwd)
+
+ifdef HDDS_VERSION
+ SOURCE_CODE_TARGET = $(HDDS_HOME)/.untar_done
+ ifdef HDDS_DIRTAG
+  HDDS_DIR = hdds-$(HDDS_VERSION)^$(HDDS_DIRTAG)
+ else
+  HDDS_DIR = hdds-$(HDDS_VERSION)
+ endif
+ TARFILE = $(HDDS_VERSION).tar.gz
+else
+ SOURCE_CODE_TARGET = $(HDDS_HOME)/.clone_done
+ ifndef HDDS_URL
+  HDDS_URL=https://github.com/jeffersonlab/hdds
+ endif
+ ifdef HDDS_DIRTAG
+  HDDS_DIR = $(notdir $(HDDS_URL))^$(HDDS_DIRTAG)
+ else
+  HDDS_DIR = $(notdir $(HDDS_URL))
+ endif
+ ifndef HDDS_BRANCH
+  HDDS_BRANCH = master
+ endif
+endif
+
+HDDS_HOME = $(PWD)/$(HDDS_DIR)
+
+all: prod_link
+
+$(TARFILE):
+	wget --no-check-certificate -O $@ https://github.com/jeffersonlab/hdds/archive/$(TARFILE)
+
+$(HDDS_HOME)/.clone_done:
+	git clone -b $(HDDS_BRANCH) $(HDDS_URL) $(HDDS_DIR)
+ifdef HDDS_HASH
+	cd $(HDDS_DIR) ; git checkout $(HDDS_HASH)
+endif
+	date > $@
+
+$(HDDS_HOME)/.untar_done: $(TARFILE)
+	rm -rf untar_temp_dir
+	mkdir untar_temp_dir
+	cd untar_temp_dir ; tar zxf ../$(TARFILE)
+	mv -v untar_temp_dir/* $(HDDS_DIR)
+	rmdir -v untar_temp_dir
+	date > $@
+
+$(HDDS_HOME)/.sconstruct_done: $(SOURCE_CODE_TARGET)
+	cd $(HDDS_HOME) ; scons install SHOWBUILD=1
+	date > $@
+
+ifndef GVMS_TEST
+$(HDDS_HOME)/hdds_prereqs_version.xml: $(HDDS_HOME)/.sconstruct_done
+else
+$(HDDS_HOME)/hdds_prereqs_version.xml: $(SOURCE_CODE_TARGET)
+endif
+	cd $(HDDS_HOME) ; $(BUILD_SCRIPTS)/version_prereqs.pl hdds
+
+prod_link: $(HDDS_HOME)/hdds_prereqs_version.xml
+	test -L prod || ln -s hdds prod # will not overwrite existing link

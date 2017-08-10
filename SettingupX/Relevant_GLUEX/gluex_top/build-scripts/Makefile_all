@@ -1,0 +1,185 @@
+ifndef ROOT_OF_ALL
+  export ROOT_OF_ALL=$(shell pwd)
+endif
+
+MACHINE_NAME = $(shell uname -m)
+
+CERNLIB = ${ROOT_OF_ALL}/cernlib
+CLHEP_TOP = ${ROOT_OF_ALL}/clhep
+SIM-RECON = ${ROOT_OF_ALL}/sim-recon
+HDDS = ${ROOT_OF_ALL}/hdds
+JANA = ${ROOT_OF_ALL}/jana
+ROOT = ${ROOT_OF_ALL}/root
+XERCES = ${ROOT_OF_ALL}/xerces-c
+GEANT4 = ${ROOT_OF_ALL}/geant4
+GSL = ${ROOT_OF_ALL}/gsl
+CCDB = ${ROOT_OF_ALL}/ccdb
+EVIO = ${ROOT_OF_ALL}/evio
+LAPACK = ${ROOT_OF_ALL}/lapack
+RCDB = ${ROOT_OF_ALL}/rcdb
+HD_UTILITIES = ${ROOT_OF_ALL}/hd_utilities
+HDGEANT4 = ${ROOT_OF_ALL}/hdgeant4
+GLUEX_ROOT_ANALYSIS = ${ROOT_OF_ALL}/gluex_root_analysis
+AMPTOOLS_ALL = ${ROOT_OF_ALL}/amptools
+
+all: env xerces_build cernlib_build lapack_build root_build clhep_build geant4_build gsl_build evio_build rcdb_build ccdb_build jana_build hdds_build amptools_build sim-recon_build hd_utilities_build hdgeant4_build gluex_root_analysis_build
+
+gluex: env xerces_build cernlib_build lapack_build root_build geant4_build evio_build rcdb_build ccdb_build jana_build hdds_build amptools_build sim-recon_build hd_utilities_build hdgeant4_build gluex_root_analysis_build
+
+cernlib_build: cernlib_dir cernlib_make
+
+cernlib_dir:
+	test -d ${CERNLIB} || mkdir -pv ${CERNLIB}
+
+cernlib_make:
+ifneq ($(MACHINE_NAME),x86_64)
+	$(MAKE) -C${CERNLIB} -f${BUILD_SCRIPTS}/Makefile_cernlib
+else
+	$(MAKE) -C${CERNLIB} -f${BUILD_SCRIPTS}/Makefile_cernlib_Vogt
+endif
+
+cernlib_debug_build: cernlib_debug_dir cernlib_debug_make
+
+cernlib_debug_dir:
+	test -d ${CERNLIB}_debug || mkdir -pv ${CERNLIB}_debug
+
+cernlib_debug_make:
+ifneq ($(MACHINE_NAME),x86_64)
+	$(MAKE) -C${CERNLIB}_debug -f${BUILD_SCRIPTS}/Makefile_cernlib
+else
+	$(MAKE) -C${CERNLIB}_debug -f${BUILD_SCRIPTS}/Makefile_cernlib_Vogt DEBUG=true
+endif
+
+xerces_build: xerces_dir xerces_make
+
+xerces_dir:
+	test -d ${XERCES} || mkdir -pv ${XERCES}
+
+xerces_make:
+	$(MAKE) -C${XERCES} -f${BUILD_SCRIPTS}/Makefile_xercesc_3
+
+root_build: root_dir
+	    $(MAKE) -C${ROOT} -f${BUILD_SCRIPTS}/Makefile_root
+
+root_dir:
+	test -d ${ROOT} || mkdir -pv ${ROOT}
+
+jana_build: jana_dir jana_make
+
+jana_dir:
+	test -d ${JANA} || mkdir -pv ${JANA}
+
+jana_make:
+	$(MAKE) -C${JANA} -f${BUILD_SCRIPTS}/Makefile_jana
+
+hdds_build: hdds_dir hdds_make
+
+hdds_dir:
+	test -d ${HDDS} || mkdir -pv ${HDDS}
+
+hdds_make:
+	$(MAKE) -C${HDDS} -f${BUILD_SCRIPTS}/Makefile_hdds
+
+sim-recon_build: sim-recon_dir sim-recon_make
+
+sim-recon_dir:
+	test -d ${SIM-RECON} || mkdir -pv ${SIM-RECON}
+
+sim-recon_make:
+	$(MAKE) -C${SIM-RECON} -f${BUILD_SCRIPTS}/Makefile_sim-recon
+
+clhep_build: clhep_dir clhep_make
+
+clhep_dir:
+	test -d ${CLHEP_TOP} || mkdir -pv ${CLHEP_TOP}
+
+clhep_make:
+	$(MAKE) -C${CLHEP_TOP} -f${BUILD_SCRIPTS}/Makefile_clhep
+
+calib_make:
+	test -d calib || svn checkout https://halldsvn.jlab.org/repos/trunk/calib
+
+geant4_build: geant4_dir geant4_make
+
+geant4_dir:
+	test -d ${GEANT4} || mkdir -pv ${GEANT4}
+
+geant4_make:
+	$(MAKE) -C$(GEANT4) -f$(BUILD_SCRIPTS)/Makefile_geant4
+
+gsl_build: gsl_dir gsl_make
+
+gsl_dir:
+	test -d ${GSL} || mkdir -pv ${GSL}
+
+gsl_make:
+	$(MAKE) -C$(GSL) -f$(BUILD_SCRIPTS)/Makefile_gsl
+
+rcdb_build: rcdb_dir rcdb_make
+
+rcdb_dir:
+	test -d ${RCDB} || mkdir -pv ${RCDB}
+
+rcdb_make:
+	$(MAKE) -C$(RCDB) -f$(BUILD_SCRIPTS)/Makefile_rcdb
+
+ccdb_build: ccdb_dir ccdb_make
+
+ccdb_dir:
+	test -d ${CCDB} || mkdir -pv ${CCDB}
+
+ccdb_make:
+	$(MAKE) -C$(CCDB) -f$(BUILD_SCRIPTS)/Makefile_ccdb
+
+evio_build: evio_dir evio_make
+
+evio_dir:
+	test -d ${EVIO} || mkdir -pv ${EVIO}
+
+evio_make:
+	$(MAKE) -C$(EVIO) -f$(BUILD_SCRIPTS)/Makefile_evio
+
+lapack_build: lapack_dir lapack_make
+
+lapack_dir:
+	test -d ${LAPACK} || mkdir -pv ${LAPACK}
+
+lapack_make:
+	$(MAKE) -C${LAPACK} -f${BUILD_SCRIPTS}/Makefile_lapack
+
+hd_utilities_build: hd_utilities_dir hd_utilities_make
+
+hd_utilities_dir:
+	test -d ${HD_UTILITIES} || mkdir -pv ${HD_UTILITIES}
+
+hd_utilities_make:
+	$(MAKE) -C${HD_UTILITIES} -f${BUILD_SCRIPTS}/Makefile_hd_utilities
+
+hdgeant4_build: hdgeant4_dir hdgeant4_make
+
+hdgeant4_dir:
+	test -d ${HDGEANT4} || mkdir -pv ${HDGEANT4}
+
+hdgeant4_make:
+	$(MAKE) -C${HDGEANT4} -f${BUILD_SCRIPTS}/Makefile_hdgeant4
+
+gluex_root_analysis_build: gluex_root_analysis_dir gluex_root_analysis_make
+
+gluex_root_analysis_dir:
+	test -d ${GLUEX_ROOT_ANALYSIS} || mkdir -pv ${GLUEX_ROOT_ANALYSIS}
+
+gluex_root_analysis_make:
+	$(MAKE) -C${GLUEX_ROOT_ANALYSIS} -f${BUILD_SCRIPTS}/Makefile_gluex_root_analysis
+
+amptools_build: amptools_dir amptools_make
+
+amptools_dir:
+	test -d ${AMPTOOLS_ALL} || mkdir -pv ${AMPTOOLS_ALL}
+
+amptools_make:
+	$(MAKE) -C${AMPTOOLS_ALL} -f${BUILD_SCRIPTS}/Makefile_amptools
+
+env:
+	@echo BUILD_SCRIPTS = ${BUILD_SCRIPTS}
+	@echo HALLD = ${HALLD}
+	@echo ROOT_OF_ALL = ${ROOT_OF_ALL}

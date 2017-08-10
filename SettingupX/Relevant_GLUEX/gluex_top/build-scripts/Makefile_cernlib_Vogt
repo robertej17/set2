@@ -1,0 +1,45 @@
+# build in the current working directory
+
+VERSION_DATE=2014.04.17
+CORR_FILE = cernlib.2005.corr.$(VERSION_DATE).tgz
+INSTALL_FILE = cernlib.2005.install.$(VERSION_DATE).tgz
+ALL_FILE = cernlib-2005-all-new.tgz
+DIST_FILES = $(ALL_FILE) $(CORR_FILE) $(INSTALL_FILE)
+
+ifndef GVMS_TEST
+all: .build_done
+else
+all: .unpack_done
+endif
+
+$(DIST_FILES):
+	wget --no-check-certificate http://www-zeuthen.desy.de/linear_collider/cernlib/new/$@
+
+.untar_done: $(DIST_FILES)
+	tar zxvf $(ALL_FILE)
+	cp -v $(CORR_FILE) cernlib.2005.corr.tgz
+	tar zxvf $(INSTALL_FILE)
+	date > $@
+
+.install_src_done: .untar_done
+	export CERN=`pwd` ; ./Install_cernlib_src
+	date > $@
+
+.patch_done: .install_src_done
+	patch < $(BUILD_SCRIPTS)/patches/cernlib/Install_cernlib.patch
+ifdef DEBUG
+	patch < $(BUILD_SCRIPTS)/patches/cernlib/Install_cernlib.debug.patch
+endif
+	cd 2005/src/packlib/kuip/kuip ; \
+	patch < $(BUILD_SCRIPTS)/patches/cernlib/kstring.h.patch
+	cd 2005/src/config ; \
+	patch < $(BUILD_SCRIPTS)/patches/cernlib/Imake.cf.patch
+	date > $@
+
+.build_done: .patch_done
+	./Install_cernlib
+	date > $@
+
+.error_check_done: .build_done
+	grep Error 2005/build/log/make.???? ; if [ $$? -eq 0 ] ; then exit 1 ; else exit 0 ; fi
+	date > $@
